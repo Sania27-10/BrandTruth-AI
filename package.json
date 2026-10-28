@@ -1,0 +1,12 @@
+{
+  "name": "brandtruth-ai",
+  "version": "2.0.0",
+  "private": true,
+  "description": "BrandTruth AI: check brand content before it is published (Team Novax, Round 2)",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "build": "npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install",
+    "start": "node server/index.js",
+    "test": "npm --prefix server test"
+  }
+}
