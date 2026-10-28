@@ -5,8 +5,8 @@
   "description": "BrandTruth AI: check brand content before it is published (Team Novax, Round 2)",
   "engines": { "node": ">=18" },
   "scripts": {
-  "build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build && npm --prefix server install",
-  "start": "node server/index.js",
-  "test": "npm --prefix server test"
+  "build": "npm --prefix frontend install --include=dev && npm --prefix frontend run build && npm --prefix backend install",
+  "start": "node backend/src/index.js",
+  "test": "node backend/src/smoke-test.js"
 }
 }
