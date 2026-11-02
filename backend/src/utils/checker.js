@@ -246,7 +246,6 @@ export async function extractTextFromImage(base64, mime) {
 }
 
 const overlaps = (a, b) => { const x = norm(fold(a)), y = norm(fold(b)); return x.includes(y) || y.includes(x) }
-const FALLBACK_FIX = 'Rewrite or remove this claim. No approved wording is on file for it.'
 
 function finish(list) {
   return list.map((f, i) => ({
@@ -255,27 +254,84 @@ function finish(list) {
     status: f.status,
     ruleOrFactId: f.ruleOrFactId ?? null,
     reason: f.reason,
-    suggestedFix: f.status === 'supported' ? null : f.suggestedFix || FALLBACK_FIX,
+    suggestedFix: f.status === 'supported' ? null : (f.suggestedFix || null),
+    verified: f.status === 'supported' ? null : (f.verified === true && !!f.suggestedFix),
+    verifiedNote: f.status === 'supported' ? null : (f.verifiedNote || null),
     source: f.source || 'code',
-    decision: null,
+    decision: f.decision || null,
   }))
 }
 
-// A suggested fix is only shown if the same exact checks find no problem in the fix itself.
-// If it fails, try the rule's approved wording; otherwise show no fix (the creator sees "rewrite or remove").
-const fixIsSafe = (fix, brand) => exactChecks(fix, brand, { heuristics: false }).every((f) => f.status === 'supported')
+export function collectApprovedPhrases(brand) {
+  const out = []
+  for (const r of brand.rules || []) {
+    if (r.safeWording) out.push({ id: r.id, text: r.safeWording, from: 'rule' })
+  }
+  for (const p of brand.approvedPhrases || []) {
+    if (p.text) out.push({ id: p.id, text: p.text, from: 'library' })
+  }
+  for (const f of brand.facts || []) {
+    if (f.type === 'offer_scope' && f.value?.approved) out.push({ id: f.id, text: String(f.value.approved), from: 'fact' })
+    if (f.type === 'product_name' && f.value) out.push({ id: f.id, text: String(f.value), from: 'fact' })
+  }
+  return out
+}
+
+export const fixIsSafe = (fix, brand) => {
+  if (!fix || !String(fix).trim()) return false
+  return exactChecks(String(fix), brand, { heuristics: false }).every((f) => f.status === 'supported')
+}
+
+function pickSaferFix(finding, brand) {
+  const rule = (brand.rules || []).find((r) => r.id === finding.ruleOrFactId)
+  const fact = (brand.facts || []).find((x) => x.id === finding.ruleOrFactId)
+  const tried = []
+  if (finding.suggestedFix) tried.push({ text: finding.suggestedFix, why: 'original' })
+  if (rule?.safeWording) tried.push({ text: rule.safeWording, why: 'rule' })
+  if (fact?.type === 'offer_scope' && fact.value?.approved) tried.push({ text: fact.value.approved, why: 'fact' })
+  if (fact?.type === 'offer_end_date' && /^\d{4}-\d{2}-\d{2}$/.test(String(fact.value))) {
+    const [, mm, dd] = String(fact.value).split('-').map(Number)
+    tried.push({ text: `${dd} ${MONTHS[mm - 1]}`, why: 'fact' })
+  }
+  if (fact?.type === 'discount_percent') tried.push({ text: `${fact.value}%`, why: 'fact' })
+  for (const p of collectApprovedPhrases(brand)) tried.push({ text: p.text, why: 'library' })
+
+  const seen = new Set()
+  for (const c of tried) {
+    const t = String(c.text || '').trim()
+    if (!t || seen.has(norm(t))) continue
+    seen.add(norm(t))
+    if (!fixIsSafe(t, brand)) continue
+    if (c.why === 'original') {
+      return {
+        suggestedFix: t,
+        verified: true,
+        verifiedNote: 'This rewrite was run through the same checker. It does not break another stored rule.',
+      }
+    }
+    return {
+      suggestedFix: t,
+      verified: true,
+      verifiedNote: 'The first rewrite failed a rule, so this uses approved brand wording instead.',
+    }
+  }
+  return {
+    suggestedFix: null,
+    verified: false,
+    verifiedNote: 'No rewrite passed the checker. Rewrite or drop this claim by hand.',
+  }
+}
+
 function verifyFixes(list, brand) {
   return list.map((f) => {
-    if (f.status === 'supported' || !f.suggestedFix || fixIsSafe(f.suggestedFix, brand)) return f
-    const rule = (brand.rules || []).find((r) => r.id === f.ruleOrFactId)
-    if (rule?.safeWording && fixIsSafe(rule.safeWording, brand)) return { ...f, suggestedFix: rule.safeWording }
-    return { ...f, suggestedFix: null }
+    if (f.status === 'supported') return { ...f, suggestedFix: null, verified: null, verifiedNote: null }
+    return { ...f, ...pickSaferFix(f, brand) }
   })
 }
 
 // Synchronous, no AI. Used for seeding demo submissions.
 export function checkSync(text, brand) {
-  return finish(exactChecks(text, brand))
+  return finish(verifyFixes(exactChecks(text, brand), brand))
 }
 
 export async function checkContent(rawText, brand) {
@@ -289,7 +345,7 @@ export async function checkContent(rawText, brand) {
       .filter((f) => !extras.some((e) => overlaps(e.claim, f.claim)))
       .map((f) => ({ ...f, suggestedFix: SAMPLE_FIXES[f.claim] || f.suggestedFix }))
     for (const extra of extras) list.push(extra)
-    return { findings: finish(list), meta: { source: 'sample', note: 'Sample result, saved for consistency. Edit the brand rules or paste your own text to run a live check.' } }
+    return { findings: finish(verifyFixes(list, brand)), meta: { source: 'sample', note: 'Sample result, saved for consistency. Edit the brand rules or paste your own text to run a live check. Each suggested fix has already been re-checked.' } }
   }
 
   if (!process.env.GEMINI_API_KEY) {
@@ -325,8 +381,10 @@ export async function checkContent(rawText, brand) {
 
 export function applyFixes(text, findings) {
   let out = text
-  for (const f of findings) {
-    if (f.decision !== 'accepted' || !f.suggestedFix) continue
+  const accepted = (findings || [])
+    .filter((f) => f.decision === 'accepted' && f.suggestedFix && f.claim)
+    .sort((a, b) => String(b.claim).length - String(a.claim).length)
+  for (const f of accepted) {
     const i = out.toLowerCase().indexOf(f.claim.toLowerCase())
     if (i >= 0) out = out.slice(0, i) + f.suggestedFix + out.slice(i + f.claim.length)
   }

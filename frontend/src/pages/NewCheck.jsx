@@ -79,7 +79,9 @@ export default function NewCheck() {
     reader.readAsDataURL(file)
   }
 
-  if (role !== 'creator') return null
+  if (role !== 'creator') {
+    return <p className="text-sm text-slate-500">Switch to Creator in the top right to check a poster.</p>
+  }
 
   return (
     <div className="space-y-5">

@@ -7,10 +7,11 @@ import { Spinner, ErrorBox } from '../components/States.jsx'
 const FACT_TYPES = [
   ['discount_percent', 'Discount percent'],
   ['offer_end_date', 'Offer end date'],
+  ['offer_scope', 'Offer scope'],
   ['product_name', 'Product name'],
   ['other', 'Other'],
 ]
-const typeLabel = (t) => (FACT_TYPES.find((x) => x[0] === t) || [t, t === 'offer_scope' ? 'Offer scope' : t])[1]
+const typeLabel = (t) => (FACT_TYPES.find((x) => x[0] === t) || [t, t])[1]
 const showValue = (f) => (f.type === 'offer_scope' ? f.value.approved : f.type === 'discount_percent' ? f.value + '%' : String(f.value))
 
 export default function BrandLibrary() {
@@ -18,6 +19,7 @@ export default function BrandLibrary() {
   const [brand, setBrand] = useState(null)
   const [error, setError] = useState('')
   const [modal, setModal] = useState(null)
+  const [editing, setEditing] = useState(null)
   const [toast, setToast] = useState('')
   const canEdit = role === 'manager'
 
@@ -38,7 +40,7 @@ export default function BrandLibrary() {
       <div>
         <h1 className="text-2xl font-extrabold">Brand library</h1>
         <p className="text-sm text-slate-500">{brand ? `${brand.organization} · workspace ${brand.orgCode}` : ''}</p>
-        <p className="mt-1 text-xs text-slate-500">Only managers can change facts and rules. Exact code checks run on discounts, end dates, offer scope and banned words. Everything else is reviewed by AI.</p>
+        <p className="mt-1 text-xs text-slate-500">Only managers can change facts and rules. Changing a fact flags every linked poster in ProofMesh. Exact checks cover discounts, dates, offer scope and banned words.</p>
       </div>
       {error && <ErrorBox message={error} onRetry={load} />}
       {toast && <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700" role="status">{toast}</div>}
@@ -51,9 +53,15 @@ export default function BrandLibrary() {
               {canEdit && <button className="btn btn-primary !py-1.5" onClick={() => setModal('fact')}><Plus className="h-4 w-4" /> Add fact</button>}
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-2">ID</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Value</th><th className="px-4 py-2">Note</th></tr></thead>
+              <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-2">ID</th><th className="px-4 py-2">Type</th><th className="px-4 py-2">Value</th><th className="px-4 py-2">Note</th><th className="px-4 py-2"></th></tr></thead>
               <tbody>{brand.facts.map((f) => (
-                <tr key={f.id} className="border-t border-slate-100"><td className="px-4 py-2 font-bold text-brand-700">{f.id}</td><td className="px-4 py-2">{typeLabel(f.type)}</td><td className="px-4 py-2">{showValue(f)}</td><td className="px-4 py-2 text-slate-600">{f.text}</td></tr>
+                <tr key={f.id} className="border-t border-slate-100">
+                  <td className="px-4 py-2 font-bold text-brand-700">{f.id}</td>
+                  <td className="px-4 py-2">{typeLabel(f.type)}</td>
+                  <td className="px-4 py-2">{showValue(f)}</td>
+                  <td className="px-4 py-2 text-slate-600">{f.text}</td>
+                  <td className="px-4 py-2">{canEdit && <button className="text-sm font-semibold text-brand-700" onClick={() => setEditing(f)}>Change</button>}</td>
+                </tr>
               ))}</tbody>
             </table>
           </section>
@@ -76,13 +84,27 @@ export default function BrandLibrary() {
             {brand.assets.map((a) => (
               <p key={a.id} className="mt-2 text-sm"><b>{a.name}</b> ({a.id}): <span className="text-slate-600">{a.note}</span></p>
             ))}
-            <p className="mt-2 text-xs text-slate-400">Automatic logo and visual checks are planned for Round 3.</p>
+            <p className="mt-2 text-xs text-slate-400">These channel assets are the nodes ProofMesh flags when a linked fact changes.</p>
           </section>
         </>
       )}
 
       {modal === 'fact' && <FactForm api={api} onDone={done} onClose={() => setModal(null)} />}
       {modal === 'rule' && <RuleForm api={api} onDone={done} onClose={() => setModal(null)} />}
+      {editing && (
+        <EditFact
+          api={api}
+          fact={editing}
+          onClose={() => setEditing(null)}
+          onDone={(res) => {
+            setBrand(res.brand)
+            setEditing(null)
+            const n = (res.impact && res.impact.flagged && res.impact.flagged.length) || 0
+            setToast(`Updated ${res.updated.id}. ${n} linked item${n === 1 ? '' : 's'} flagged for re-review. Open ProofMesh to see the graph.`)
+            setTimeout(() => setToast(''), 6000)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -107,7 +129,7 @@ function FactForm({ api, onDone, onClose }) {
         <div><label className="label" htmlFor="fv">Value</label>
           {type === 'offer_end_date'
             ? <input id="fv" type="date" className="input" value={value} onChange={(e) => setValue(e.target.value)} required />
-            : <input id="fv" type={type === 'discount_percent' ? 'number' : 'text'} min="0" max="100" className="input" value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === 'discount_percent' ? 'e.g. 25' : 'e.g. Masala Chai'} required />}
+            : <input id="fv" type={type === 'discount_percent' ? 'number' : 'text'} min="0" max="100" className="input" value={value} onChange={(e) => setValue(e.target.value)} placeholder={type === 'discount_percent' ? 'e.g. 25' : type === 'offer_scope' ? 'e.g. cold coffee' : 'e.g. Masala Chai'} required />}
         </div>
         <div><label className="label" htmlFor="fn">Note (optional)</label>
           <input id="fn" className="input" value={text} onChange={(e) => setText(e.target.value)} placeholder="Short description" maxLength={200} /></div>
@@ -122,11 +144,12 @@ function RuleForm({ api, onDone, onClose }) {
   const [text, setText] = useState('')
   const [words, setWords] = useState('')
   const [severity, setSeverity] = useState('medium')
+  const [safe, setSafe] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const submit = async (e) => {
     e.preventDefault(); setBusy(true); setErr('')
-    try { onDone(await api.addRule({ text, bannedWords: words, severity })) } catch (x) { setErr(x.message); setBusy(false) }
+    try { onDone(await api.addRule({ text, bannedWords: words, severity, safeWording: safe })) } catch (x) { setErr(x.message); setBusy(false) }
   }
   return (
     <Modal title="Add a rule" onClose={onClose}>
@@ -139,8 +162,46 @@ function RuleForm({ api, onDone, onClose }) {
           <select id="rs" className="input" value={severity} onChange={(e) => setSeverity(e.target.value)}>
             <option value="low">Low</option><option value="medium">Medium</option><option value="high">High (marked as contradicted)</option>
           </select></div>
+        <div><label className="label" htmlFor="rw2">Approved wording (optional)</label>
+          <input id="rw2" className="input" value={safe} onChange={(e) => setSafe(e.target.value)} placeholder="Used when a rewrite has to stay inside the rules" maxLength={200} /></div>
         {err && <p className="text-sm text-red-600" role="alert">{err}</p>}
         <button className="btn btn-primary w-full" disabled={busy}>{busy ? 'Saving...' : 'Add rule'}</button>
+      </form>
+    </Modal>
+  )
+}
+
+function EditFact({ api, fact, onDone, onClose }) {
+  const initial = fact.type === 'offer_scope' ? fact.value.approved : String(fact.value)
+  const [value, setValue] = useState(initial)
+  const [text, setText] = useState(fact.text || '')
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true); setErr('')
+    try {
+      const payload = fact.type === 'offer_scope'
+        ? { value: { approved: value, forbidden: fact.value.forbidden || [] }, text }
+        : { value, text }
+      onDone(await api.updateFact(fact.id, payload))
+    } catch (x) { setErr(x.message); setBusy(false) }
+  }
+  return (
+    <Modal title={`Change ${fact.id}`} onClose={onClose}>
+      <p className="mb-3 text-sm text-slate-600">This re-checks every poster that used {fact.id} and flags it if the old copy no longer matches.</p>
+      <form onSubmit={submit} className="space-y-3">
+        <div>
+          <label className="label" htmlFor="ev">New value</label>
+          {fact.type === 'offer_end_date'
+            ? <input id="ev" type="date" className="input" value={value} onChange={(e) => setValue(e.target.value)} required />
+            : <input id="ev" className="input" value={value} onChange={(e) => setValue(e.target.value)} required />}
+        </div>
+        <div>
+          <label className="label" htmlFor="en">Note</label>
+          <input id="en" className="input" value={text} onChange={(e) => setText(e.target.value)} maxLength={200} />
+        </div>
+        {err && <p className="text-sm text-red-600" role="alert">{err}</p>}
+        <button className="btn btn-primary w-full" disabled={busy}>{busy ? 'Saving...' : 'Save and flag linked posters'}</button>
       </form>
     </Modal>
   )

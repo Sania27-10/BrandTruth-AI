@@ -56,13 +56,18 @@ export default function SubmissionDetail() {
         <span className="text-sm text-slate-500">Version {s.versions.length} &middot; by {s.creator}</span>
       </div>
       {error && <ErrorBox message={error} />}
+      {s.stale && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          A brand fact used by this poster changed after the last review. Check the findings again before you approve it.
+        </div>
+      )}
 
       <section className="card">
         <span className="label">Current text</span>
         <p className="text-sm">{latest.text}</p>
       </section>
 
-      {isReviewer && s.status === 'waiting_for_review' && (
+      {isReviewer && (s.status === 'waiting_for_review' || s.status === 'needs_rereview') && (
         <section className="card space-y-3 border-brand-100">
           <p className="font-bold">Your decision</p>
           <textarea className="input" rows={2} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Comment (required if you request changes)" maxLength={500} aria-label="Reviewer comment" />
@@ -80,7 +85,7 @@ export default function SubmissionDetail() {
         </section>
       )}
 
-      {isCreator && s.status === 'changes_requested' && (
+      {isCreator && (s.status === 'changes_requested' || s.status === 'needs_rereview') && (
         <section className="card space-y-3 border-orange-200">
           <p className="font-bold text-orange-700">Changes requested. Edit your text and resubmit.</p>
           <textarea className="input min-h-[100px]" value={editText} onChange={(e) => setEditText(e.target.value)} aria-label="Edited text" maxLength={3000} />
@@ -124,7 +129,7 @@ export default function SubmissionDetail() {
             <li key={i} className="rounded-xl bg-slate-50 p-3 text-sm"><p className="text-xs font-bold text-slate-500">{c.by} &middot; {fmtDate(c.at)}</p><p className="mt-0.5">{c.text}</p></li>
           ))}
         </ul>
-        {!(isReviewer && s.status === 'waiting_for_review') && (
+        {!(isReviewer && (s.status === 'waiting_for_review' || s.status === 'needs_rereview')) && (
           <div className="mt-3 flex gap-2">
             <input className="input" value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment" maxLength={500} aria-label="Add a comment" onKeyDown={(e) => e.key === 'Enter' && addComment()} />
             <button className="btn btn-ghost" onClick={addComment} disabled={busy || !comment.trim()}>Post</button>

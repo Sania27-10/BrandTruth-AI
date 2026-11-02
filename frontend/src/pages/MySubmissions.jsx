@@ -33,7 +33,7 @@ export default function MySubmissions() {
             <tbody>
               {items.map((s) => (
                 <tr key={s.id} tabIndex={0} onClick={() => navigate('/submission/' + s.id)} onKeyDown={(e) => e.key === 'Enter' && navigate('/submission/' + s.id)} className="cursor-pointer border-t border-slate-100 hover:bg-slate-50">
-                  <td className="px-4 py-3 font-semibold">{s.title}</td>
+                  <td className="px-4 py-3 font-semibold">{s.title}{s.stale ? ' · fact changed' : ''}</td>
                   <td className="px-4 py-3"><StatusBadge kind="submission" value={s.status} /></td>
                   <td className="px-4 py-3">v{s.version}</td>
                   <td className="px-4 py-3 text-slate-500">{fmtDate(s.updatedAt)}</td>

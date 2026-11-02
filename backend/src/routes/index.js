@@ -6,6 +6,8 @@ import demoRoutes from './demo.routes.js'
 import brandRoutes from './brand.routes.js'
 import checkRoutes from './check.routes.js'
 import submissionRoutes from './submission.routes.js'
+import proofmeshRoutes from './proofmesh.routes.js'
+import insightsRoutes from './insights.routes.js'
 
 const router = Router()
 
@@ -19,5 +21,7 @@ router.get('/health', asyncHandler(async (req, res) => {
 router.use('/demo', demoRoutes)
 router.use('/brand', brandRoutes)
 router.use('/submissions', submissionRoutes)
+router.use('/proofmesh', proofmeshRoutes)
+router.use('/insights', insightsRoutes)
 router.use('/', checkRoutes)   // /check and /extract
 export default router

@@ -2,6 +2,7 @@ import * as db from '../db/index.js'
 import { FACT_TYPES, SEVERITIES } from '../constants.js'
 import { badRequest, ApiError } from '../utils/ApiError.js'
 import { asyncHandler } from '../utils/asyncHandler.js'
+import { applyFactChange } from './proofmesh.controller.js'
 
 export async function loadBrand(user) {
   const b = (await db.find('brands', { orgCode: user.orgCode }))[0]
@@ -9,31 +10,55 @@ export async function loadBrand(user) {
   return b
 }
 
-// GET /api/brand
+function parseFactValue(type, raw) {
+  if (type === 'offer_scope') {
+    if (raw && typeof raw === 'object') {
+      const approved = String(raw.approved || '').trim()
+      if (!approved) throw badRequest('Say which product the offer applies to.')
+      const forbidden = Array.isArray(raw.forbidden)
+        ? raw.forbidden.map((w) => String(w).trim()).filter(Boolean)
+        : String(raw.forbidden || '').split(',').map((w) => w.trim()).filter(Boolean)
+      return { approved, forbidden }
+    }
+    const approved = String(raw ?? '').trim()
+    if (!approved) throw badRequest('Say which product the offer applies to.')
+    return { approved, forbidden: [] }
+  }
+  const value = String(raw ?? '').trim()
+  if (!value) throw badRequest('Please enter a value.')
+  if (type === 'discount_percent') {
+    const n = Number(value)
+    if (!Number.isFinite(n) || n < 0 || n > 100) throw badRequest('Discount must be a number between 0 and 100.')
+    return n
+  }
+  if (type === 'offer_end_date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw badRequest('Pick a valid date.')
+  return value
+}
+
+function defaultNote(type, value) {
+  if (type === 'discount_percent') return `Approved discount is ${value}%`
+  if (type === 'offer_end_date') return `Offer ends ${value}`
+  if (type === 'offer_scope') return `Offer applies to ${value.approved} only`
+  if (type === 'product_name') return `Approved product name: ${value}`
+  return String(value)
+}
+
+function displayValue(fact) {
+  if (fact.type === 'offer_scope') return fact.value?.approved || ''
+  return String(fact.value)
+}
+
 export const getBrand = asyncHandler(async (req, res) => {
   res.json(await loadBrand(req.user))
 })
 
-// POST /api/brand/facts  (manager)
 export const addFact = asyncHandler(async (req, res) => {
   const brand = await loadBrand(req.user)
   const body = req.body || {}
   const type = String(body.type || '')
   if (!FACT_TYPES.includes(type)) throw badRequest('Choose a fact type.')
-  let value = String(body.value ?? '').trim()
-  if (!value) throw badRequest('Please enter a value.')
-  if (type === 'discount_percent') {
-    value = Number(value)
-    if (!Number.isFinite(value) || value < 0 || value > 100) throw badRequest('Discount must be a number between 0 and 100.')
-  }
-  if (type === 'offer_end_date' && !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw badRequest('Pick a valid date.')
-  const defaults = {
-    discount_percent: `Approved discount is ${value}%`,
-    offer_end_date: `Offer ends ${value}`,
-    product_name: `Approved product name: ${value}`,
-    other: String(value),
-  }
-  const text = String(body.text || '').trim().slice(0, 200) || defaults[type]
+  const value = parseFactValue(type, body.value)
+  const text = String(body.text || '').trim().slice(0, 200) || defaultNote(type, value)
   brand.counters.fact += 1
   const fact = { id: 'F-' + String(brand.counters.fact).padStart(2, '0'), type, value, text, active: true }
   brand.facts.push(fact)
@@ -42,7 +67,26 @@ export const addFact = asyncHandler(async (req, res) => {
   res.json({ brand, added: fact })
 })
 
-// POST /api/brand/rules  (manager)
+export const updateFact = asyncHandler(async (req, res) => {
+  const brand = await loadBrand(req.user)
+  const fact = (brand.facts || []).find((f) => f.id === req.params.id)
+  if (!fact) throw badRequest('That fact is not in this brand library.')
+  const body = req.body || {}
+  const previous = displayValue(fact)
+  if (body.value !== undefined) fact.value = parseFactValue(fact.type, body.value)
+  if (body.text !== undefined) {
+    const note = String(body.text || '').trim().slice(0, 200)
+    if (note) fact.text = note
+    else fact.text = defaultNote(fact.type, fact.value)
+  } else {
+    fact.text = defaultNote(fact.type, fact.value)
+  }
+  brand.version += 1
+  await db.save('brands', brand)
+  const impact = await applyFactChange(req.user, brand, fact, previous)
+  res.json({ brand, updated: fact, impact })
+})
+
 export const addRule = asyncHandler(async (req, res) => {
   const brand = await loadBrand(req.user)
   const body = req.body || {}

@@ -20,7 +20,16 @@ export default function FindingCard({ finding, onDecide }) {
         <div className="mt-3 rounded-xl bg-slate-50 p-3 text-sm">
           <span className="label !mb-0.5">Suggested fix</span>
           <span className="text-slate-800">{f.suggestedFix}</span>
+          {f.verified && (
+            <p className="mt-2 text-xs font-medium text-green-700">Verified: this wording was run through the same checker and does not break another rule.</p>
+          )}
+          {!f.verified && f.verifiedNote && (
+            <p className="mt-2 text-xs text-amber-700">{f.verifiedNote}</p>
+          )}
         </div>
+      )}
+      {!f.suggestedFix && f.status !== 'supported' && f.verifiedNote && (
+        <p className="mt-3 text-xs text-amber-700">{f.verifiedNote}</p>
       )}
       {onDecide && f.status !== 'supported' && (
         <div className="mt-3 flex flex-wrap gap-2">

@@ -10,6 +10,8 @@ const SUBMISSION = {
   waiting_for_review: ['Waiting for review', 'bg-blue-50 text-blue-700 border-blue-200'],
   changes_requested: ['Changes requested', 'bg-orange-50 text-orange-700 border-orange-200'],
   approved: ['Approved', 'bg-green-50 text-green-700 border-green-200'],
+  needs_rereview: ['Needs re-review', 'bg-amber-50 text-amber-800 border-amber-300'],
+  stale: ['Fact changed', 'bg-amber-50 text-amber-800 border-amber-300'],
 }
 
 export default function StatusBadge({ value, kind = 'finding' }) {

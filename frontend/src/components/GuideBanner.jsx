@@ -3,10 +3,10 @@ import { Check, X } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 
 const STEPS = [
-  ['checked', 'Creator: pick a sample poster and click "Check my content"'],
+  ['checked', 'Creator: pick a sample poster and click Check my content'],
   ['decided', 'Accept a fix and ignore one'],
-  ['submitted', 'Click "Submit for review"'],
-  ['approved', 'Switch to Reviewer (top right), open the item and Approve'],
+  ['submitted', 'Submit for review, then switch to Reviewer and approve'],
+  ['approved', 'Switch to Manager, change the F-04 end date, open ProofMesh'],
 ]
 
 export default function GuideBanner() {
@@ -30,7 +30,7 @@ export default function GuideBanner() {
           </li>
         ))}
       </ol>
-      <p className="mt-2 text-xs text-slate-500">Managers can add facts and rules on the Brand Library page. No sign-in needed: one person can use all three roles.</p>
+      <p className="mt-2 text-xs text-slate-500">Use the role switcher at the top right. Insights shows how often each rule is ignored. The demo password is chai-tapri if you came from the shared login.</p>
     </div>
   )
 }

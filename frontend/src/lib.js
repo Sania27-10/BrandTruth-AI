@@ -7,8 +7,10 @@ export const SAMPLES = [
 // Replace each accepted claim with its suggested fix.
 export function applyFixes(text, findings) {
   let out = text
-  for (const f of findings) {
-    if (f.decision !== 'accepted' || !f.suggestedFix) continue
+  const accepted = (findings || [])
+    .filter((f) => f.decision === 'accepted' && f.suggestedFix && f.claim)
+    .sort((a, b) => String(b.claim).length - String(a.claim).length)
+  for (const f of accepted) {
     const i = out.toLowerCase().indexOf(f.claim.toLowerCase())
     if (i >= 0) out = out.slice(0, i) + f.suggestedFix + out.slice(i + f.claim.length)
   }

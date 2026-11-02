@@ -6,6 +6,8 @@ import MySubmissions from './pages/MySubmissions.jsx'
 import BrandLibrary from './pages/BrandLibrary.jsx'
 import ReviewQueue from './pages/ReviewQueue.jsx'
 import SubmissionDetail from './pages/SubmissionDetail.jsx'
+import ProofMesh from './pages/ProofMesh.jsx'
+import Insights from './pages/Insights.jsx'
 
 export default function App() {
   return (
@@ -16,6 +18,8 @@ export default function App() {
         <Route path="/submissions" element={<MySubmissions />} />
         <Route path="/submission/:id" element={<SubmissionDetail />} />
         <Route path="/brand" element={<BrandLibrary />} />
+        <Route path="/proofmesh" element={<ProofMesh />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="/queue" element={<ReviewQueue />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

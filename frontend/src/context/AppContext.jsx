@@ -27,7 +27,8 @@ export function AppProvider({ children }) {
 
   const startWorkspace = (ws) => {
     setWorkspace(ws); save('bt_ws', ws)
-    setRoleState('creator'); save('bt_role', 'creator')
+    const nextRole = ws.signedInAs || 'creator'
+    setRoleState(nextRole); save('bt_role', nextRole)
     setProgress({}); save('bt_prog', {})
     setNotice('')
   }

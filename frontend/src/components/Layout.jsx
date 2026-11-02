@@ -1,15 +1,23 @@
 import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { ShieldCheck, FilePlus, ListChecks, Library, ClipboardCheck, Info } from 'lucide-react'
+import { ShieldCheck, FilePlus, ListChecks, Library, ClipboardCheck, Info, GitBranch, BarChart3 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import GuideBanner from './GuideBanner.jsx'
 
 const NAV = {
   creator: [{ to: '/check', label: 'New Check', icon: FilePlus }, { to: '/submissions', label: 'My Submissions', icon: ListChecks }],
-  manager: [{ to: '/brand', label: 'Brand Library', icon: Library }],
+  manager: [
+    { to: '/brand', label: 'Brand Library', icon: Library },
+    { to: '/proofmesh', label: 'ProofMesh', icon: GitBranch },
+    { to: '/insights', label: 'Insights', icon: BarChart3 },
+  ],
   reviewer: [{ to: '/queue', label: 'Review Queue', icon: ClipboardCheck }],
 }
 const HOME = { creator: '/check', manager: '/brand', reviewer: '/queue' }
-const ALLOWED = { creator: ['/check', '/submissions', '/submission'], manager: ['/brand', '/submission'], reviewer: ['/queue', '/submission'] }
+const ALLOWED = {
+  creator: ['/check', '/submissions', '/submission'],
+  manager: ['/brand', '/proofmesh', '/insights', '/submission'],
+  reviewer: ['/queue', '/submission'],
+}
 const ROLES = [['creator', 'Creator'], ['manager', 'Manager'], ['reviewer', 'Reviewer']]
 
 export default function Layout() {
@@ -30,6 +38,7 @@ export default function Layout() {
             <ShieldCheck className="h-6 w-6 text-brand-600" />
             <span className="text-lg font-extrabold tracking-tight">BrandTruth AI</span>
             <span className="hidden rounded-md bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 sm:inline">{workspace.orgCode}</span>
+            {workspace.shared && <span className="hidden rounded-md bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 sm:inline">shared demo</span>}
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden items-center gap-1 text-xs text-slate-500 lg:flex" title="Findings combine exact code checks with AI review. Humans approve everything.">

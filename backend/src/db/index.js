@@ -3,6 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { DB_NAME } from '../constants.js'
 
 const mem = { users: new Map(), brands: new Map(), submissions: new Map() }
+// unknown collection names get a map on first use so new stores don't crash the process
+function bucket(col) {
+  if (!mem[col]) mem[col] = new Map()
+  return mem[col]
+}
 let db = null
 let mode = 'memory'
 
@@ -31,25 +36,25 @@ const clone = (x) => JSON.parse(JSON.stringify(x))
 export async function insert(col, doc) {
   if (!doc._id) doc._id = randomUUID()
   if (db) await db.collection(col).insertOne(clone(doc))
-  else mem[col].set(doc._id, clone(doc))
+  else bucket(col).set(doc._id, clone(doc))
   return doc
 }
 
 export async function get(col, id) {
   if (db) return db.collection(col).findOne({ _id: id })
-  const d = mem[col].get(id)
+  const d = bucket(col).get(id)
   return d ? clone(d) : null
 }
 
 export async function find(col, filter = {}) {
   if (db) return db.collection(col).find(filter).toArray()
-  return [...mem[col].values()]
+  return [...bucket(col).values()]
     .filter((d) => Object.entries(filter).every(([k, v]) => d[k] === v))
     .map(clone)
 }
 
 export async function save(col, doc) {
   if (db) await db.collection(col).replaceOne({ _id: doc._id }, clone(doc), { upsert: true })
-  else mem[col].set(doc._id, clone(doc))
+  else bucket(col).set(doc._id, clone(doc))
   return doc
 }

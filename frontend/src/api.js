@@ -1,5 +1,3 @@
-// Every call to the backend goes through this file.
-// Empty in dev (Vite proxy forwards /api) and when the backend serves the frontend.
 const BASE = (import.meta.env.VITE_API_URL || '') + '/api'
 
 async function request(method, path, token, body, onExpired) {
@@ -8,7 +6,7 @@ async function request(method, path, token, body, onExpired) {
     res = await fetch(BASE + path, {
       method,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
+      body: body !== undefined && method !== 'GET' ? JSON.stringify(body) : undefined,
     })
   } catch {
     throw new Error('Cannot reach the server. Check your connection and try again.')
@@ -24,22 +22,28 @@ async function request(method, path, token, body, onExpired) {
 }
 
 export const startDemo = () => request('POST', '/demo/start', null, {})
+export const demoInfo = () => request('GET', '/demo/info', null)
+export const loginDemo = (body) => request('POST', '/demo/login', null, body)
 
 export function makeApi(token, onExpired) {
   const r = (m, p, b) => request(m, p, token, b, onExpired)
   return {
     getBrand: () => r('GET', '/brand'),
     addFact: (fact) => r('POST', '/brand/facts', fact),
+    updateFact: (id, fact) => r('PATCH', `/brand/facts/${id}`, fact),
     addRule: (rule) => r('POST', '/brand/rules', rule),
     runCheck: (text) => r('POST', '/check', { text }),
     extractText: (image, mime) => r('POST', '/extract', { image, mime }),
     createSubmission: (data) => r('POST', '/submissions', data),
-    listSubmissions: (status) => r('GET', '/submissions' + (status ? `?status=${status}` : '')),
+    listSubmissions: (status) => r('GET', '/submissions' + (status ? `?status=${encodeURIComponent(status)}` : '')),
+    listQueue: () => r('GET', '/submissions?queue=1'),
     getSubmission: (id) => r('GET', `/submissions/${id}`),
     submitForReview: (id) => r('POST', `/submissions/${id}/submit`, {}),
     resubmit: (id, text) => r('POST', `/submissions/${id}/resubmit`, { text }),
     addComment: (id, text) => r('POST', `/submissions/${id}/comments`, { text }),
     approve: (id) => r('POST', `/submissions/${id}/approve`, {}),
     requestChanges: (id, comment) => r('POST', `/submissions/${id}/request-changes`, { comment }),
+    getProofMesh: (factId) => r('GET', '/proofmesh' + (factId ? `?factId=${encodeURIComponent(factId)}` : '')),
+    getInsights: () => r('GET', '/insights'),
   }
 }

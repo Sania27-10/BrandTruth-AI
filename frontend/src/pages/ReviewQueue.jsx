@@ -14,7 +14,7 @@ export default function ReviewQueue() {
 
   const load = useCallback(async () => {
     setError('')
-    try { setItems(await api.listSubmissions('waiting_for_review')) } catch (e) { setError(e.message) }
+    try { setItems(await api.listQueue()) } catch (e) { setError(e.message) }
   }, [api])
   useEffect(() => { if (role === 'reviewer') load() }, [load, role])
 
@@ -35,6 +35,11 @@ export default function ReviewQueue() {
             <p className="text-xs text-slate-500">by {s.creator} &middot; v{s.version} &middot; {fmtDate(s.updatedAt)}</p>
           </div>
           <div className="flex items-center gap-2">
+            {s.stale && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
+                <AlertTriangle className="h-3 w-3" /> Fact changed
+              </span>
+            )}
             {s.ignoredCount > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
                 <AlertTriangle className="h-3 w-3" /> {s.ignoredCount} ignored finding{s.ignoredCount > 1 ? 's' : ''}

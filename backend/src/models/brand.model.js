@@ -35,8 +35,17 @@ export function makeBrand(orgCode) {
       },
     ],
     assets: [
-      { id: 'A-01', type: 'logo', name: 'Primary logo', note: 'Do not stretch or recolour. Keep clear space around it.' },
+      { id: 'A-01', type: 'logo', name: 'Primary logo', note: 'Do not stretch or recolour. Keep clear space around it.', linkedFactIds: [] },
+      { id: 'A-02', type: 'channel', name: 'Instagram story', note: 'Festival BOGO story', linkedFactIds: ['F-04', 'F-03'] },
+      { id: 'A-03', type: 'channel', name: 'Table card', note: 'Counter tent card for the same offer', linkedFactIds: ['F-04', 'F-03'] },
+      { id: 'A-04', type: 'channel', name: 'WhatsApp message', note: 'Customer blast for the BOGO window', linkedFactIds: ['F-04'] },
     ],
-    counters: { fact: 4, rule: 14, asset: 1 },
+    approvedPhrases: [
+      { id: 'W-01', text: 'Our chai, brewed fresh every morning' },
+      { id: 'W-02', text: 'Made with ragi, no refined sugar' },
+      { id: 'W-03', text: 'Brewed fresh every morning' },
+    ],
+    factHistory: [],
+    counters: { fact: 4, rule: 14, asset: 4 },
   }
 }
