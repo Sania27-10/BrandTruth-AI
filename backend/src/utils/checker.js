@@ -119,10 +119,10 @@ export function exactChecks(text, brand, opts = {}) {
       const hit = (r.bannedWords || []).find((w) => w && wordRe(w).test(clause))
       if (hit) {
         out.push({
-          claim: clause, status: r.severity === 'high' ? 'contradicted' : 'needs_review', ruleOrFactId: r.id, source: 'code',
+          claim: clause, status: (r.severity === 'high' || r.severity === 'critical') ? 'contradicted' : 'needs_review', ruleOrFactId: r.id, source: 'code',
           reason: `Contains "${hit}", which is restricted by ${r.id}: ${r.text}.`,
           suggestedFix: r.safeWording || null,
-          defaultFix: !!r.safeWording, // stored wording is only a fallback; the AI may write a fix that fits this poster
+          defaultFix: !!r.safeWording,
         })
       }
     }
@@ -138,11 +138,11 @@ export function exactChecks(text, brand, opts = {}) {
       if (!m) continue
       const rule = p.ruleHint ? rules.find((r) => p.ruleHint.test(r.text)) : null
       if (rule) {
-        out.push({
-          claim: clause, status: rule.severity === 'high' ? 'contradicted' : 'needs_review', ruleOrFactId: rule.id, source: 'code',
-          reason: `"${m[0]}" looks like a ${p.kind} claim, which ${rule.id} restricts: ${rule.text}.`,
-          suggestedFix: rule.safeWording || null, defaultFix: !!rule.safeWording,
-        })
+          out.push({
+            claim: clause, status: (rule.severity === 'high' || rule.severity === 'critical') ? 'contradicted' : 'needs_review', ruleOrFactId: rule.id, source: 'code',
+            reason: `"${m[0]}" looks like a ${p.kind} claim, which ${rule.id} restricts: ${rule.text}.`,
+            suggestedFix: rule.safeWording || null, defaultFix: !!rule.safeWording,
+          })
       } else {
         out.push({
           claim: clause, status: 'needs_review', ruleOrFactId: null, source: 'code',
@@ -247,19 +247,29 @@ export async function extractTextFromImage(base64, mime) {
 
 const overlaps = (a, b) => { const x = norm(fold(a)), y = norm(fold(b)); return x.includes(y) || y.includes(x) }
 
-function finish(list) {
-  return list.map((f, i) => ({
-    id: 'f' + (i + 1),
-    claim: f.claim,
-    status: f.status,
-    ruleOrFactId: f.ruleOrFactId ?? null,
-    reason: f.reason,
-    suggestedFix: f.status === 'supported' ? null : (f.suggestedFix || null),
-    verified: f.status === 'supported' ? null : (f.verified === true && !!f.suggestedFix),
-    verifiedNote: f.status === 'supported' ? null : (f.verifiedNote || null),
-    source: f.source || 'code',
-    decision: f.decision || null,
-  }))
+function finish(list, brand = {}) {
+  const facts = brand.facts || []
+  const rules = brand.rules || []
+  return list.map((f, i) => {
+    const fact = facts.find((x) => x.id === f.ruleOrFactId)
+    const rule = rules.find((x) => x.id === f.ruleOrFactId)
+    return {
+      id: 'f' + (i + 1),
+      claim: f.claim,
+      status: f.status,
+      ruleOrFactId: f.ruleOrFactId ?? null,
+      reason: f.reason,
+      suggestedFix: f.status === 'supported' ? null : (f.suggestedFix || null),
+      verified: f.status === 'supported' ? null : (f.verified === true && !!f.suggestedFix),
+      verifiedNote: f.status === 'supported' ? null : (f.verifiedNote || null),
+      source: f.source || 'code',
+      decision: f.decision || null,
+      stale: false,
+      reverified: false,
+      factVersion: fact ? (fact.version || 1) : null,
+      ruleVersion: rule ? (rule.version || 1) : null,
+    }
+  })
 }
 
 export function collectApprovedPhrases(brand) {
@@ -331,7 +341,7 @@ function verifyFixes(list, brand) {
 
 // Synchronous, no AI. Used for seeding demo submissions.
 export function checkSync(text, brand) {
-  return finish(verifyFixes(exactChecks(text, brand), brand))
+  return finish(verifyFixes(exactChecks(text, brand), brand), brand)
 }
 
 export async function checkContent(rawText, brand) {
@@ -345,11 +355,27 @@ export async function checkContent(rawText, brand) {
       .filter((f) => !extras.some((e) => overlaps(e.claim, f.claim)))
       .map((f) => ({ ...f, suggestedFix: SAMPLE_FIXES[f.claim] || f.suggestedFix }))
     for (const extra of extras) list.push(extra)
-    return { findings: finish(verifyFixes(list, brand)), meta: { source: 'sample', note: 'Sample result, saved for consistency. Edit the brand rules or paste your own text to run a live check. Each suggested fix has already been re-checked.' } }
+    return {
+      findings: finish(verifyFixes(list, brand), brand),
+      meta: {
+        source: 'sample',
+        checksRan: ['discount_percent', 'offer_end_date', 'offer_scope', 'banned_words', 'verified_fixes'],
+        aiAvailable: false,
+        note: 'Sample result, saved for consistency. Edit the brand rules or paste your own text to run a live check. Each suggested fix has already been re-checked against the same engine.',
+      },
+    }
   }
 
   if (!process.env.GEMINI_API_KEY) {
-    return { findings: finish(verifyFixes(code, brand)), meta: { source: 'code-only', note: 'The AI service is not configured, so only the exact code checks ran (numbers, dates, offer scope, banned words).' } }
+    return {
+      findings: finish(verifyFixes(code, brand), brand),
+      meta: {
+        source: 'code-only',
+        checksRan: ['discount_percent', 'offer_end_date', 'offer_scope', 'banned_words', 'verified_fixes'],
+        aiAvailable: false,
+        note: 'The AI service is not configured, so only the exact code checks ran (numbers, dates, offer scope, banned words). Suggested rewrites were still passed back through those checks.',
+      },
+    }
   }
 
   try {
@@ -372,10 +398,26 @@ export async function checkContent(rawText, brand) {
     }
     const lower = text.toLowerCase()
     list.sort((a, b) => lower.indexOf(a.claim.toLowerCase()) - lower.indexOf(b.claim.toLowerCase()))
-    return { findings: finish(verifyFixes(list, brand)), meta: { source: 'live', note: 'Live AI review of your text against the brand facts and rules (AI-assisted). Exact numbers, dates and banned words are double-checked by code, and every fix is re-checked.' } }
+    return {
+      findings: finish(verifyFixes(list, brand), brand),
+      meta: {
+        source: 'live',
+        checksRan: ['discount_percent', 'offer_end_date', 'offer_scope', 'banned_words', 'ai_review', 'verified_fixes'],
+        aiAvailable: true,
+        note: 'Live AI review of your text against the brand facts and rules (AI-assisted). Exact numbers, dates and banned words are double-checked by code, and every fix is re-checked so it does not break another stored rule.',
+      },
+    }
   } catch (e) {
     console.error('[ai] check failed:', e.message)
-    return { findings: finish(verifyFixes(code, brand)), meta: { source: 'code-only', note: `The AI service was unavailable, so only the exact code checks ran. Reason: ${String(e.message).slice(0, 160)}` } }
+    return {
+      findings: finish(verifyFixes(code, brand), brand),
+      meta: {
+        source: 'code-only',
+        checksRan: ['discount_percent', 'offer_end_date', 'offer_scope', 'banned_words', 'verified_fixes'],
+        aiAvailable: false,
+        note: `The AI service was unavailable, so only the exact code checks ran. Reason: ${String(e.message).slice(0, 160)}`,
+      },
+    }
   }
 }
 

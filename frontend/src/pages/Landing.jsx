@@ -88,7 +88,7 @@ export default function Landing() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr><th className="py-1 pr-3">Role</th><th className="py-1 pr-3">Name</th><th className="py-1 pr-3">Username</th><th className="py-1"></th></tr>
+              <tr><th className="py-1 pr-3">Role</th><th className="py-1 pr-3">Name</th><th className="py-1 pr-3">Username</th><th className="py-1 pr-3">Password</th><th className="py-1"></th></tr>
             </thead>
             <tbody>
               {accounts.map((a) => (
@@ -96,6 +96,7 @@ export default function Landing() {
                   <td className="py-2 pr-3 capitalize">{a.role}</td>
                   <td className="py-2 pr-3 font-semibold">{a.name}</td>
                   <td className="py-2 pr-3"><code>{a.username}</code></td>
+                  <td className="py-2 pr-3"><code>{a.password || password}</code></td>
                   <td className="py-2 text-right">
                     <button className="btn btn-primary !py-1 !text-xs" disabled={!!loading} onClick={() => enterRole(a.role)}>
                       {loading === a.role ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : `Enter as ${a.name}`}
@@ -129,7 +130,7 @@ export default function Landing() {
         {[
           ['1. Check a poster', 'Open as Creator. Pick a sample, run the check, accept or ignore each fix.'],
           ['2. Approve it', 'Switch to Reviewer. Open the queue, comment, approve or send it back.'],
-          ['3. Change a fact', 'Switch to Manager. Edit the offer end date, then open ProofMesh and Insights.'],
+          ['3. Change a fact', 'Switch to Manager. Edit F-04 (festival date) or F-01 (snack discount), then open ProofMesh and Insights.'],
         ].map(([t, d]) => (
           <div key={t} className="card"><p className="font-bold">{t}</p><p className="mt-1 text-sm text-slate-600">{d}</p></div>
         ))}

@@ -13,4 +13,6 @@ router.post('/:id/resubmit', authorize(ROLES.CREATOR), c.resubmit)
 router.post('/:id/comments', c.addComment)
 router.post('/:id/approve', authorize(ROLES.REVIEWER), c.approve)
 router.post('/:id/request-changes', authorize(ROLES.REVIEWER), c.requestChanges)
+router.post('/:id/reverify', authorize(ROLES.MANAGER, ROLES.CREATOR, ROLES.REVIEWER), c.reverify)
+router.post('/:id/mark-updated', authorize(ROLES.MANAGER, ROLES.CREATOR), c.markUpdated)
 export default router

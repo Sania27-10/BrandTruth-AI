@@ -1,7 +1,7 @@
 // Sample posters (must match server/seed.js) and small helpers.
 export const SAMPLES = [
-  { id: 'festival', title: 'Festival poster', text: "Buy 1 Get 1 on ALL drinks, till 20 November. India's best chai!" },
-  { id: 'snack', title: 'Healthy snack poster', text: 'Cures diabetes naturally! Now 40% off all ragi snacks, free delivery today.' },
+  { id: 'festival', title: 'Festival poster', text: "Buy 1 Get 1 on ALL drinks, till 20 November. India's best chai!", uses: ['F-03', 'F-04', 'R-12'] },
+  { id: 'snack', title: 'Healthy snack poster', text: 'Cures diabetes naturally! Now 40% off all ragi snacks, free delivery today.', uses: ['F-01', 'R-13', 'R-14'] },
 ]
 
 // Replace each accepted claim with its suggested fix.

@@ -2,6 +2,7 @@ import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-route
 import { ShieldCheck, FilePlus, ListChecks, Library, ClipboardCheck, Info, GitBranch, BarChart3 } from 'lucide-react'
 import { useApp } from '../context/AppContext.jsx'
 import GuideBanner from './GuideBanner.jsx'
+import NotifyBell from './NotifyBell.jsx'
 
 const NAV = {
   creator: [{ to: '/check', label: 'New Check', icon: FilePlus }, { to: '/submissions', label: 'My Submissions', icon: ListChecks }],
@@ -44,6 +45,7 @@ export default function Layout() {
             <span className="hidden items-center gap-1 text-xs text-slate-500 lg:flex" title="Findings combine exact code checks with AI review. Humans approve everything.">
               <Info className="h-3.5 w-3.5" /> AI-assisted
             </span>
+            <NotifyBell />
             <div className="flex rounded-xl bg-slate-100 p-1" role="tablist" aria-label="Switch role">
               {ROLES.map(([r, label]) => (
                 <button key={r} role="tab" aria-selected={role === r} onClick={() => switchRole(r)}
@@ -59,6 +61,11 @@ export default function Layout() {
       <div className="mx-auto flex max-w-6xl gap-6 px-4 py-6">
         <aside className="hidden w-52 shrink-0 md:block">
           <p className="mb-3 text-xs text-slate-500">Acting as <b>{user ? user.name : ''}</b> ({role})</p>
+          {workspace.shared && (
+            <p className="mb-3 rounded-lg bg-slate-50 p-2 text-[11px] leading-relaxed text-slate-500">
+              Shared demo login: meera / rahul / priya · password <code>chai-tapri</code>. Switching the role tabs above is the same as logging in as that person.
+            </p>
+          )}
           <nav className="space-y-1">
             {links.map(({ to, label, icon: Icon }) => (
               <NavLink key={to} to={to} className={({ isActive }) => `flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold ${isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-100'}`}>

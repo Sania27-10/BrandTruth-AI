@@ -8,6 +8,7 @@ import checkRoutes from './check.routes.js'
 import submissionRoutes from './submission.routes.js'
 import proofmeshRoutes from './proofmesh.routes.js'
 import insightsRoutes from './insights.routes.js'
+import notifyRoutes from './notify.routes.js'
 
 const router = Router()
 
@@ -23,5 +24,6 @@ router.use('/brand', brandRoutes)
 router.use('/submissions', submissionRoutes)
 router.use('/proofmesh', proofmeshRoutes)
 router.use('/insights', insightsRoutes)
+router.use('/notifications', notifyRoutes)
 router.use('/', checkRoutes)   // /check and /extract
 export default router

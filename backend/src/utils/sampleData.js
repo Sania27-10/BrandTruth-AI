@@ -15,10 +15,21 @@ export const SAMPLE_EXTRAS = {
     {
       claim: 'free delivery today',
       status: 'needs_review',
-      ruleOrFactId: null,
-      reason: 'No approved fact or rule covers delivery offers, so a reviewer should confirm this claim.',
+      ruleOrFactId: 'R-13',
+      reason: 'R-13 restricts free-delivery promises unless an approved delivery fact exists.',
       suggestedFix: 'Ask about delivery options',
       source: 'sample',
     },
   ],
 }
+
+export const SNACK_SAMPLE_TEXT = 'Cures diabetes naturally! Now 40% off all ragi snacks, free delivery today.'
+export const SNACK_APPROVED_COPY = [
+  { title: 'Snack Instagram story', assetId: 'A-05', channel: 'instagram', text: 'Ragi snacks, 30% off. Made with ragi, no refined sugar.' },
+  { title: 'Snack table card', assetId: 'A-06', channel: 'print', text: '30% off ragi snacks. Ask at the counter.' },
+  { title: 'Snack WhatsApp', assetId: 'A-07', channel: 'whatsapp', text: 'Ragi snacks are 30% off this week. Made with ragi, no refined sugar.' },
+]
+export const SNACK_IGNORED_ADS = [
+  { title: 'Wellness chalkboard', text: 'Our ragi mix cures diabetes at home.' },
+  { title: 'Gym counter card', text: 'Cures diabetes with every pack of ragi snacks.' },
+]

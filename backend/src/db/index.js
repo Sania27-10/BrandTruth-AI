@@ -23,6 +23,10 @@ export async function connectDB() {
     await client.connect()
     db = client.db(DB_NAME)
     mode = 'mongodb'
+    await db.collection('users').createIndex({ orgCode: 1, token: 1 })
+    await db.collection('brands').createIndex({ orgCode: 1 })
+    await db.collection('submissions').createIndex({ orgCode: 1, status: 1 })
+    await db.collection('notifications').createIndex({ orgCode: 1, userId: 1, at: -1 })
     console.log('[db] connected to MongoDB')
   } catch (e) {
     console.error('[db] MongoDB connection failed, falling back to memory:', e.message)

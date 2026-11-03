@@ -1,62 +1,53 @@
-BrandTruth AI
+# BrandTruth AI
 
-Catch brand mistakes before publishing.
+Catch brand mistakes before a poster goes live.
 
-BrandTruth AI helps teams check marketing content against approved brand facts and rules. It identifies potential issues, suggests corrections, and supports a review and approval workflow.
+BrandTruth AI is a small governance tool for a fictional cafe, Chai Tapri Co. A manager keeps approved facts and rules. A creator checks copy against those facts. A reviewer decides whether the poster can ship, including the awkward case where the creator ignored a finding.
 
-Live Demo
+## Live demo
 
-Live Website: [Add your deployed website link here]
+Anyone with the site link can try it. No sign-up.
 
-Anyone with the link can access the website.
+Demo accounts are printed on the home page:
 
-No sign-up is required to start the demo.
+| Role | Name | Username | Password |
+|---|---|---|---|
+| Manager | Meera | `meera` | `chai-tapri` |
+| Creator | Rahul | `rahul` | `chai-tapri` |
+| Reviewer | Priya | `priya` | `chai-tapri` |
 
-Users can try the Manager, Creator, and Reviewer workflows.
+One-click buttons log you in as each person. A private demo button builds a fresh workspace if you do not want to share the sample history.
 
-Sample data from the fictional brand Chai Tapri Co. is provided.
+## What each role does
 
-Features
+- **Creator:** pick a sample poster or paste text, run the checker, accept or ignore each finding, submit to the queue.
+- **Reviewer:** open waiting posters, read ignored findings, request changes, or approve anyway after ticking the confirmation box.
+- **Manager:** edit facts (try F-04 for the festival date or F-01 for the snack discount), watch ProofMesh flag linked assets, then re-verify. Insights only count real decisions. The healthy snack sample uses F-01, R-13 and R-14 — those records appear in the Brand Library, ProofMesh and Insights, not only on the Creator check screen.
 
-Manage approved brand facts and rules.
+## Run locally
 
-Check poster text and supported uploaded images.
-
-Detect potential brand inconsistencies.
-
-Get AI-assisted explanations and suggested fixes.
-
-Submit content for review and approval.
-
-Track comments, versions, and decisions.
-
-Tech Stack
-
-Frontend: React, Vite, Tailwind CSS
-
-Backend: Node.js, Express
-
-Database: MongoDB or in-memory storage
-
-AI: Google Gemini (optional)
-
-Run Locally
-
-# Start the backend
-cd server
+```bash
+cd backend
 npm install
 npm run dev
 
-# Start the frontend in another terminal
-cd client
+cd frontend
 npm install
 npm run dev
+```
 
-Environment Variables
+Optional environment variables:
 
-Configure GEMINI_API_KEY for AI features and MONGODB_URI for persistent database storage. The application supports fallback checks without these optional services.
+- `GEMINI_API_KEY` — image text extraction and extra AI notes
+- `MONGODB_URI` — persistent store; without it the server uses memory
 
-Testing
+Exact date and discount checks still run if Gemini is missing.
 
-cd server
+## Tests
+
+```bash
+cd backend
 npm test
+```
+
+From the repo root: `npm test`.

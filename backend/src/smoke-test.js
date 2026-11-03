@@ -64,6 +64,7 @@ try {
   const snack = 'Cures diabetes naturally! Now 40% off all ragi snacks, free delivery today.'
   r = await call('POST', '/check', tok.creator, { text: snack })
   assert.equal(r.body.findings.length, 3)
+  assert.deepEqual(r.body.findings.map((f) => f.ruleOrFactId).sort(), ['F-01', 'R-13', 'R-14'])
 
   const findings = r.body.findings.map((f, i) => ({ ...f, decision: i === 0 ? 'accepted' : 'ignored' }))
   const sub = await call('POST', '/submissions', tok.creator, { title: 'Snack', originalText: snack, finalText: 'Made with ragi, no refined sugar! Now 40% off all ragi snacks, free delivery today.', findings, submit: true })
@@ -80,6 +81,25 @@ try {
   rc = await call('POST', `/submissions/${id}/approve`, tok.reviewer)
   assert.equal(rc.body.status, 'approved')
   assert.equal(rc.body.versions.length, 3)
+
+  const ignoreText = "India's best chai near the station!"
+  const ignoreCheck = await call('POST', '/check', tok.creator, { text: ignoreText })
+  assert.ok(ignoreCheck.body.findings.some((f) => f.ruleOrFactId === 'R-12'))
+  const ignoreDoc = await call('POST', '/submissions', tok.creator, {
+    title: 'Approve anyway path',
+    originalText: ignoreText,
+    finalText: ignoreText,
+    findings: ignoreCheck.body.findings.map((f) => ({ ...f, decision: f.status === 'supported' ? null : 'ignored' })),
+    submit: true,
+  })
+  assert.equal(ignoreDoc.body.status, 'waiting_for_review')
+  const blocked = await call('POST', `/submissions/${ignoreDoc.body._id}/approve`, tok.reviewer, {})
+  assert.equal(blocked.status, 400)
+  assert.equal(blocked.body.code, 'ACK_REQUIRED')
+  const anyway = await call('POST', `/submissions/${ignoreDoc.body._id}/approve`, tok.reviewer, { acknowledge: true })
+  assert.equal(anyway.status, 200)
+  assert.equal(anyway.body.status, 'approved')
+  assert.equal(anyway.body.approvedAnyway, true)
   const twice = await call('POST', `/submissions/${id}/approve`, tok.reviewer)
   assert.equal(twice.status, 200)
   assert.equal(twice.body.status, 'approved')
@@ -97,6 +117,16 @@ try {
   assert.equal(meshBefore.status, 200)
   assert.ok(meshBefore.body.nodes.some((n) => n.kind === 'submission' && n.label === 'Instagram story'))
 
+  const snackMesh = await call('GET', '/proofmesh', tok.manager, null, { factId: 'F-01' })
+  assert.equal(snackMesh.status, 200)
+  assert.ok(snackMesh.body.nodes.some((n) => n.kind === 'asset' && n.label === 'Snack Instagram story'))
+  assert.ok(snackMesh.body.nodes.some((n) => n.kind === 'submission' && n.label === 'Healthy snack poster'))
+
+  const healthMesh = await call('GET', '/proofmesh', tok.manager, null, { factId: 'R-14' })
+  assert.equal(healthMesh.status, 200)
+  assert.equal(healthMesh.body.kind, 'rule')
+  assert.ok(healthMesh.body.nodes.some((n) => n.kind === 'claim'))
+
   const changed = await patch('/brand/facts/F-04', tok.manager, { value: '2026-11-21' })
   assert.equal(changed.status, 200)
   assert.ok(changed.body.impact.flagged.length >= 3)
@@ -112,6 +142,11 @@ try {
   assert.ok(r12)
   assert.ok(r12.ignored >= 1)
   assert.ok(r12.flagged >= r12.ignored)
+  const r14 = insights.body.rows.find((row) => row.id === 'R-14')
+  assert.ok(r14)
+  assert.ok(r14.ignored >= 1)
+  const f01 = insights.body.rows.find((row) => row.id === 'F-01')
+  assert.ok(f01)
 
   const other = await call('POST', '/demo/start')
   const otherTok = Object.fromEntries(other.body.users.map((u) => [u.role, u.token]))

@@ -4,13 +4,15 @@ const FINDING = {
   supported: ['Supported', 'bg-green-50 text-green-700 border-green-200'],
   accepted: ['Accepted', 'bg-white text-green-700 border-green-300'],
   ignored: ['Ignored', 'bg-slate-100 text-slate-600 border-slate-200'],
+  reverification_required: ['Re-verification required', 'bg-amber-50 text-amber-800 border-amber-300'],
+  reverified: ['Re-verified', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
 }
 const SUBMISSION = {
   draft: ['Draft', 'bg-slate-100 text-slate-700 border-slate-200'],
   waiting_for_review: ['Waiting for review', 'bg-blue-50 text-blue-700 border-blue-200'],
   changes_requested: ['Changes requested', 'bg-orange-50 text-orange-700 border-orange-200'],
   approved: ['Approved', 'bg-green-50 text-green-700 border-green-200'],
-  needs_rereview: ['Needs re-review', 'bg-amber-50 text-amber-800 border-amber-300'],
+  needs_rereview: ['Re-review required', 'bg-amber-50 text-amber-800 border-amber-300'],
   stale: ['Fact changed', 'bg-amber-50 text-amber-800 border-amber-300'],
 }
 

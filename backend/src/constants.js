@@ -11,9 +11,18 @@ export const STATUS = {
   REREVIEW: 'needs_rereview',
 }
 
-export const FINDING_STATUS = ['contradicted', 'needs_review', 'supported']
+export const FINDING_STATUS = [
+  'contradicted',
+  'needs_review',
+  'supported',
+  'accepted',
+  'ignored',
+  'reverification_required',
+  'reverified',
+]
 export const FACT_TYPES = ['discount_percent', 'offer_end_date', 'offer_scope', 'product_name', 'other']
-export const SEVERITIES = ['low', 'medium', 'high']
+export const SEVERITIES = ['low', 'medium', 'high', 'critical']
+export const RULE_CATEGORIES = ['claims', 'legal', 'tone', 'offer', 'other']
 
 export const SHARED_ORG = 'TAPRI-DEMO'
 export const DEMO_PASSWORD = 'chai-tapri'
